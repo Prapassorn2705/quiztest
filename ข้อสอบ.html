@@ -1,0 +1,1482 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ระบบข้อสอบ Emotions and Feeling</title>
+<link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+<style>
+:root {
+  --primary: #0dc587;
+  --primary-dark: #09a872;
+  --primary-light: #5ddbad;
+  --secondary: #d2af32;
+  --secondary-dark: #b8961e;
+  --bg: #e8ecef;
+  --bg2: #dde1e7;
+  --surface: #e8ecef;
+  --text: #2d3436;
+  --text-light: #636e72;
+  --shadow-light: #ffffff;
+  --shadow-dark: #c5cad1;
+  --border: #dde1e7;
+  --danger: #e74c3c;
+  --warning: #f39c12;
+  --success: #0dc587;
+  --radius: 16px;
+  --radius-sm: 10px;
+}
+.theme-blue {
+  --primary: #2563eb;
+  --primary-dark: #1d4ed8;
+  --primary-light: #60a5fa;
+  --secondary: #ffffff;
+  --secondary-dark: #e2e8f0;
+  --bg: #e8ecef;
+  --bg2: #dde1e7;
+  --surface: #e8ecef;
+  --text: #1e293b;
+  --text-light: #64748b;
+  --shadow-light: #ffffff;
+  --shadow-dark: #c5cad1;
+  --border: #dde1e7;
+}
+.theme-purple {
+  --primary: #8b5cf6;
+  --primary-dark: #7c3aed;
+  --primary-light: #a78bfa;
+  --secondary: #ec4899;
+  --secondary-dark: #db2777;
+  --bg: #e8ecef;
+  --bg2: #dde1e7;
+  --surface: #e8ecef;
+  --text: #1e1b4b;
+  --text-light: #6d28d9;
+  --shadow-light: #ffffff;
+  --shadow-dark: #c5cad1;
+  --border: #dde1e7;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Kanit', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+}
+.nm {
+  background: var(--surface);
+  box-shadow: 6px 6px 12px var(--shadow-dark), -6px -6px 12px var(--shadow-light);
+  border-radius: var(--radius);
+}
+.nm-inset {
+  background: var(--surface);
+  box-shadow: inset 4px 4px 8px var(--shadow-dark), inset -4px -4px 8px var(--shadow-light);
+  border-radius: var(--radius-sm);
+}
+.nm-sm {
+  background: var(--surface);
+  box-shadow: 3px 3px 6px var(--shadow-dark), -3px -3px 6px var(--shadow-light);
+  border-radius: var(--radius-sm);
+}
+.nm-pressed {
+  background: var(--surface);
+  box-shadow: inset 2px 2px 5px var(--shadow-dark), inset -2px -2px 5px var(--shadow-light);
+  border-radius: var(--radius-sm);
+}
+header {
+  background: var(--surface);
+  box-shadow: 0 4px 15px var(--shadow-dark);
+  padding: 0 20px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.header-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 64px;
+  gap: 12px;
+}
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+.logo-icon {
+  width: 42px; height: 42px;
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px;
+  box-shadow: 3px 3px 8px var(--shadow-dark), -1px -1px 4px var(--shadow-light);
+}
+.logo-text { font-size: 15px; font-weight: 600; color: var(--text); line-height: 1.2; }
+.logo-sub { font-size: 11px; color: var(--text-light); font-weight: 400; }
+.tabs {
+  display: flex;
+  gap: 6px;
+  background: var(--bg2);
+  padding: 6px;
+  border-radius: var(--radius);
+  box-shadow: inset 2px 2px 5px var(--shadow-dark), inset -2px -2px 5px var(--shadow-light);
+}
+.tab-btn {
+  padding: 8px 16px;
+  border: none;
+  background: transparent;
+  font-family: 'Kanit', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-light);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+.tab-btn.active {
+  background: var(--surface);
+  color: var(--primary);
+  box-shadow: 3px 3px 6px var(--shadow-dark), -3px -3px 6px var(--shadow-light);
+}
+.tab-btn:not(.active):hover { color: var(--text); }
+.tab-btn .lock-icon { font-size: 10px; margin-left: 3px; }
+.main { max-width: 1100px; margin: 0 auto; padding: 24px 16px; }
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+.card { padding: 28px; margin-bottom: 20px; }
+.card-title {
+  font-size: 18px; font-weight: 600;
+  color: var(--text);
+  margin-bottom: 20px;
+  display: flex; align-items: center; gap: 8px;
+}
+.form-group { margin-bottom: 16px; }
+.form-label { font-size: 14px; font-weight: 500; color: var(--text); margin-bottom: 8px; display: block; }
+.form-input {
+  width: 100%;
+  padding: 12px 16px;
+  border: none;
+  font-family: 'Kanit', sans-serif;
+  font-size: 14px;
+  color: var(--text);
+  background: var(--surface);
+  box-shadow: inset 3px 3px 6px var(--shadow-dark), inset -3px -3px 6px var(--shadow-light);
+  border-radius: var(--radius-sm);
+  outline: none;
+  transition: all 0.2s;
+}
+.form-input:focus {
+  box-shadow: inset 4px 4px 8px var(--shadow-dark), inset -4px -4px 8px var(--shadow-light), 0 0 0 2px var(--primary);
+}
+.form-input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.btn {
+  padding: 12px 24px;
+  border: none;
+  font-family: 'Kanit', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition: all 0.15s;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 4px 4px 8px var(--shadow-dark), -4px -4px 8px var(--shadow-light);
+}
+.btn:active {
+  box-shadow: inset 2px 2px 5px var(--shadow-dark), inset -2px -2px 5px var(--shadow-light);
+  transform: scale(0.98);
+}
+.btn-primary {
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  color: white;
+  box-shadow: 4px 4px 10px rgba(13,197,135,0.4), -2px -2px 6px var(--shadow-light);
+}
+.btn-primary:active {
+  box-shadow: inset 2px 2px 5px rgba(0,0,0,0.2);
+}
+.btn-secondary {
+  background: linear-gradient(135deg, var(--secondary), var(--secondary-dark));
+  color: white;
+  box-shadow: 4px 4px 10px rgba(210,175,50,0.4), -2px -2px 6px var(--shadow-light);
+}
+.btn-danger {
+  background: linear-gradient(135deg, #e74c3c, #c0392b);
+  color: white;
+  box-shadow: 4px 4px 10px rgba(231,76,60,0.4), -2px -2px 6px var(--shadow-light);
+}
+.btn-sm { padding: 7px 14px; font-size: 12px; }
+.btn-xs { padding: 4px 10px; font-size: 11px; }
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+.grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+.stat-card {
+  padding: 20px;
+  text-align: center;
+}
+.stat-value { font-size: 28px; font-weight: 700; color: var(--primary); line-height: 1; }
+.stat-label { font-size: 12px; color: var(--text-light); margin-top: 4px; }
+.badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+}
+.badge-success { background: rgba(13,197,135,0.15); color: var(--success); }
+.badge-danger { background: rgba(231,76,60,0.15); color: var(--danger); }
+.badge-warning { background: rgba(243,156,18,0.15); color: var(--warning); }
+.badge-info { background: rgba(52,152,219,0.15); color: #3498db; }
+table { width: 100%; border-collapse: collapse; }
+th { padding: 10px 12px; text-align: left; font-size: 13px; font-weight: 600; color: var(--text-light); background: var(--bg2); }
+td { padding: 10px 12px; font-size: 13px; border-bottom: 1px solid var(--border); }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: rgba(13,197,135,0.04); }
+.table-wrap { overflow-x: auto; border-radius: var(--radius-sm); }
+.progress-bar-wrap {
+  background: var(--bg2);
+  box-shadow: inset 2px 2px 4px var(--shadow-dark), inset -2px -2px 4px var(--shadow-light);
+  border-radius: 20px;
+  height: 10px;
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+.progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--primary), var(--secondary));
+  border-radius: 20px;
+  transition: width 0.3s ease;
+}
+.question-card { position: relative; padding: 28px; }
+.q-number {
+  font-size: 12px; color: var(--text-light); font-weight: 500;
+  margin-bottom: 6px;
+}
+.q-text { font-size: 16px; font-weight: 500; color: var(--text); margin-bottom: 20px; line-height: 1.6; }
+.choice-list { display: flex; flex-direction: column; gap: 10px; }
+.choice-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 14px 18px;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  box-shadow: 3px 3px 6px var(--shadow-dark), -3px -3px 6px var(--shadow-light);
+  transition: all 0.2s;
+  border: 2px solid transparent;
+}
+.choice-item:hover {
+  box-shadow: 4px 4px 8px var(--shadow-dark), -4px -4px 8px var(--shadow-light);
+  border-color: var(--primary);
+}
+.choice-item.selected {
+  border-color: var(--primary);
+  box-shadow: inset 2px 2px 5px var(--shadow-dark), inset -2px -2px 5px var(--shadow-light);
+  background: rgba(13,197,135,0.06);
+}
+.choice-item.correct { border-color: var(--success); background: rgba(13,197,135,0.1); }
+.choice-item.wrong { border-color: var(--danger); background: rgba(231,76,60,0.08); }
+.choice-label {
+  width: 28px; height: 28px; min-width: 28px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 600;
+  background: var(--bg2);
+  box-shadow: inset 1px 1px 3px var(--shadow-dark), inset -1px -1px 3px var(--shadow-light);
+  color: var(--text-light);
+}
+.choice-item.selected .choice-label { background: var(--primary); color: white; }
+.choice-item.correct .choice-label { background: var(--success); color: white; }
+.choice-item.wrong .choice-label { background: var(--danger); color: white; }
+.choice-text { font-size: 14px; }
+.nav-btns { display: flex; gap: 10px; justify-content: space-between; align-items: center; margin-top: 20px; }
+.timer-circle {
+  position: absolute;
+  top: 16px; right: 16px;
+  width: 52px; height: 52px;
+}
+.timer-circle svg { transform: rotate(-90deg); }
+.timer-circle .track { fill: none; stroke: var(--border); stroke-width: 4; }
+.timer-circle .fill { fill: none; stroke-width: 4; stroke-linecap: round; transition: stroke-dashoffset 1s linear, stroke 0.5s; }
+.timer-text {
+  position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 13px; font-weight: 600;
+  color: var(--text);
+}
+.timer-pulse { animation: pulse 0.5s ease-in-out infinite alternate; }
+@keyframes pulse { from { transform: translate(-50%,-50%) scale(1); } to { transform: translate(-50%,-50%) scale(1.15); } }
+.score-display {
+  text-align: center;
+  padding: 32px;
+}
+.score-big {
+  font-size: 64px; font-weight: 700;
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  line-height: 1;
+}
+.score-sub { font-size: 16px; color: var(--text-light); margin-top: 4px; }
+.review-item {
+  padding: 14px 18px;
+  margin-bottom: 10px;
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  box-shadow: 3px 3px 6px var(--shadow-dark), -3px -3px 6px var(--shadow-light);
+  border-left: 4px solid var(--border);
+}
+.review-item.correct { border-left-color: var(--success); }
+.review-item.wrong { border-left-color: var(--danger); }
+.review-item.skipped { border-left-color: var(--warning); }
+.review-q { font-size: 14px; font-weight: 500; margin-bottom: 6px; }
+.review-ans { font-size: 12px; color: var(--text-light); }
+.admin-login {
+  max-width: 360px; margin: 0 auto; text-align: center; padding: 40px;
+}
+.admin-login .logo-icon { width: 60px; height: 60px; font-size: 28px; margin: 0 auto 16px; }
+.overlay-hint {
+  text-align: center; padding: 60px 20px;
+  color: var(--text-light);
+}
+.overlay-hint .icon { font-size: 48px; margin-bottom: 12px; }
+.filter-row { display: flex; gap: 10px; align-items: center; margin-bottom: 16px; flex-wrap: wrap; }
+.pagination { display: flex; gap: 6px; justify-content: center; margin-top: 16px; flex-wrap: wrap; }
+.page-btn {
+  width: 34px; height: 34px;
+  border: none; cursor: pointer;
+  font-family: 'Kanit', sans-serif;
+  font-size: 13px;
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: 2px 2px 5px var(--shadow-dark), -2px -2px 5px var(--shadow-light);
+  color: var(--text);
+  transition: all 0.15s;
+}
+.page-btn.active {
+  background: var(--primary);
+  color: white;
+  box-shadow: none;
+}
+.chart-wrap { position: relative; height: 260px; }
+.toggle-wrap { display: flex; align-items: center; gap: 10px; }
+.toggle {
+  width: 46px; height: 24px;
+  background: var(--bg2);
+  border-radius: 12px;
+  position: relative;
+  cursor: pointer;
+  box-shadow: inset 2px 2px 4px var(--shadow-dark), inset -2px -2px 4px var(--shadow-light);
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+.toggle.on { background: var(--primary); box-shadow: inset 2px 2px 4px rgba(0,0,0,0.2); }
+.toggle-knob {
+  width: 18px; height: 18px;
+  background: white;
+  border-radius: 50%;
+  position: absolute;
+  top: 3px; left: 3px;
+  transition: left 0.2s;
+  box-shadow: 1px 1px 3px rgba(0,0,0,0.2);
+}
+.toggle.on .toggle-knob { left: 25px; }
+.color-themes { display: flex; gap: 12px; flex-wrap: wrap; }
+.theme-option {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 16px;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  box-shadow: 3px 3px 6px var(--shadow-dark), -3px -3px 6px var(--shadow-light);
+  font-size: 13px;
+  border: 2px solid transparent;
+  transition: all 0.2s;
+}
+.theme-option.active { border-color: var(--primary); }
+.theme-dot {
+  width: 16px; height: 16px;
+  border-radius: 50%;
+}
+.hint-text { font-size: 12px; color: var(--text-light); margin-top: 6px; }
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.4);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 999;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.2s;
+}
+.modal-overlay.open { opacity: 1; pointer-events: all; }
+.modal {
+  background: var(--surface);
+  border-radius: var(--radius);
+  box-shadow: 8px 8px 20px var(--shadow-dark), -4px -4px 12px var(--shadow-light);
+  padding: 28px;
+  max-width: 520px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+.modal-title { font-size: 18px; font-weight: 600; margin-bottom: 20px; }
+.loading { text-align: center; padding: 40px; color: var(--text-light); }
+.loading-spin {
+  width: 36px; height: 36px;
+  border: 3px solid var(--border);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin: 0 auto 12px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.toast {
+  position: fixed; bottom: 24px; right: 24px;
+  padding: 12px 20px;
+  border-radius: var(--radius-sm);
+  font-size: 14px; font-weight: 500;
+  background: var(--text);
+  color: white;
+  z-index: 9999;
+  box-shadow: 4px 4px 12px rgba(0,0,0,0.2);
+  transform: translateY(80px);
+  opacity: 0;
+  transition: all 0.3s;
+}
+.toast.show { transform: translateY(0); opacity: 1; }
+.toast.success { background: var(--success); }
+.toast.error { background: var(--danger); }
+.qr-wrap { display: flex; justify-content: center; padding: 16px; }
+.input-row { display: flex; gap: 8px; align-items: flex-end; }
+.input-row .form-input { flex: 1; }
+.section-title {
+  font-size: 14px; font-weight: 600;
+  color: var(--text-light);
+  margin: 20px 0 12px;
+  padding-bottom: 6px;
+  border-bottom: 2px solid var(--border);
+}
+@media (max-width: 768px) {
+  .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr 1fr; }
+  .grid-4 { grid-template-columns: 1fr 1fr; }
+  .tabs { overflow-x: auto; padding: 4px; }
+  .tab-btn { padding: 7px 12px; font-size: 12px; }
+  .header-inner { height: auto; padding: 10px 0; flex-wrap: wrap; }
+}
+@media (max-width: 480px) {
+  .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+  .tabs { gap: 3px; }
+  .tab-btn { padding: 6px 10px; font-size: 11px; }
+}
+.start-screen { max-width: 480px; margin: 0 auto; }
+.anon-divider { text-align: center; color: var(--text-light); font-size: 13px; margin: 12px 0; position: relative; }
+.anon-divider::before, .anon-divider::after {
+  content: ''; position: absolute; top: 50%;
+  width: 40%; height: 1px;
+  background: var(--border);
+}
+.anon-divider::before { left: 0; }
+.anon-divider::after { right: 0; }
+</style>
+</head>
+<body>
+<header>
+  <div class="header-inner">
+    <div class="logo">
+      <div class="logo-icon">😊</div>
+      <div>
+        <div class="logo-text" id="headerTitle">ระบบข้อสอบ</div>
+        <div class="logo-sub" id="headerDev">ประภัสสร เรืองฤทธิ์ | กุญชรศิรวิทย์</div>
+      </div>
+    </div>
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab('exam')">📝 ทำข้อสอบ</button>
+      <button class="tab-btn" id="tab-admin" onclick="switchTab('admin')">⚙️ จัดการ <span class="lock-icon" id="lock-admin">🔒</span></button>
+      <button class="tab-btn" id="tab-dashboard" onclick="switchTab('dashboard')">📊 Dashboard <span class="lock-icon" id="lock-dashboard">🔒</span></button>
+      <button class="tab-btn" id="tab-settings" onclick="switchTab('settings')">🔧 ตั้งค่า <span class="lock-icon" id="lock-settings">🔒</span></button>
+    </div>
+  </div>
+</header>
+<div class="main">
+
+<!-- TAB: EXAM -->
+<div class="tab-content active" id="tab-exam">
+  <div id="exam-start" class="start-screen">
+    <div class="nm card" style="text-align:center; padding:36px 28px;">
+      <div style="font-size:48px; margin-bottom:12px;">😊</div>
+      <div style="font-size:22px; font-weight:700; color:var(--primary); margin-bottom:6px;" id="startSubject">Emotions and Feeling</div>
+      <div style="font-size:13px; color:var(--text-light); margin-bottom:24px;">กรอกข้อมูลเพื่อเริ่มทำข้อสอบ</div>
+      <div class="form-group" style="text-align:left;">
+        <label class="form-label">ชื่อ-นามสกุล</label>
+        <input class="form-input" id="studentName" placeholder="กรอกชื่อ-นามสกุล" autocomplete="off">
+      </div>
+      <div class="form-group" style="text-align:left;">
+        <label class="form-label">ห้องเรียน</label>
+        <input class="form-input" id="studentRoom" placeholder="เช่น ม.3/1" autocomplete="off">
+      </div>
+      <button class="btn btn-primary" style="width:100%; justify-content:center; font-size:16px; padding:14px;" onclick="startExam(false)">🚀 เริ่มทำข้อสอบ</button>
+      <div class="anon-divider">หรือ</div>
+      <button class="btn" style="width:100%; justify-content:center; font-size:14px;" onclick="startExam(true)">👤 โหมดไม่ระบุตัวตน</button>
+    </div>
+  </div>
+  <div id="exam-doing" style="display:none; max-width:680px; margin:0 auto;">
+    <div class="nm-sm" style="padding:12px 16px; margin-bottom:16px; display:flex; align-items:center; justify-content:space-between;">
+      <div style="font-size:13px; color:var(--text-light);">ข้อ <span id="q-current">1</span> จาก <span id="q-total">0</span></div>
+      <div style="font-size:13px; font-weight:600; color:var(--primary);" id="q-student-name"></div>
+    </div>
+    <div class="progress-bar-wrap">
+      <div class="progress-bar-fill" id="q-progress" style="width:0%"></div>
+    </div>
+    <div class="nm question-card" id="question-card">
+      <div id="timer-container" style="display:none;">
+        <div class="timer-circle">
+          <svg viewBox="0 0 52 52" width="52" height="52">
+            <circle class="track" cx="26" cy="26" r="22"/>
+            <circle class="fill" id="timer-arc" cx="26" cy="26" r="22" stroke="var(--primary)"
+              stroke-dasharray="138.2" stroke-dashoffset="0"/>
+          </svg>
+          <div class="timer-text" id="timer-text">30</div>
+        </div>
+      </div>
+      <div class="q-number" id="q-num-label">ข้อที่ 1</div>
+      <div class="q-text" id="q-text"></div>
+      <div class="choice-list" id="choice-list"></div>
+      <div class="nav-btns">
+        <button class="btn btn-sm" onclick="prevQuestion()">◀ ก่อนหน้า</button>
+        <span style="font-size:12px; color:var(--text-light);" id="answered-count">ตอบแล้ว 0 ข้อ</span>
+        <button class="btn btn-sm btn-primary" id="next-btn" onclick="nextQuestion()">ถัดไป ▶</button>
+      </div>
+    </div>
+    <div style="text-align:center; margin-top:16px;">
+      <button class="btn btn-secondary" onclick="confirmSubmit()">📤 ส่งคำตอบ</button>
+    </div>
+  </div>
+  <div id="exam-result" style="display:none; max-width:680px; margin:0 auto;">
+    <div class="nm card score-display">
+      <div style="font-size:16px; font-weight:600; color:var(--text-light); margin-bottom:8px;">คะแนนของคุณ</div>
+      <div class="score-big" id="score-big">0/0</div>
+      <div class="score-sub" id="score-pct"></div>
+      <div id="pass-badge" style="margin-top:12px;"></div>
+      <div style="margin-top:20px; display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
+        <button class="btn btn-primary" onclick="restartExam()">🔄 ทำใหม่</button>
+        <button class="btn" onclick="toggleReview()">📋 ดูเฉลย</button>
+      </div>
+    </div>
+    <div id="review-section" style="display:none; margin-top:16px;">
+      <div style="font-size:16px; font-weight:600; margin-bottom:12px;">สรุปรายข้อ</div>
+      <div id="review-list"></div>
+    </div>
+  </div>
+</div>
+
+<!-- TAB: ADMIN -->
+<div class="tab-content" id="tab-admin-content">
+  <div id="admin-login-screen">
+    <div class="admin-login nm card">
+      <div class="logo-icon" style="width:60px;height:60px;font-size:28px;margin:0 auto 16px;">⚙️</div>
+      <div style="font-size:18px;font-weight:700;margin-bottom:4px;">Admin Login</div>
+      <div style="font-size:13px;color:var(--text-light);margin-bottom:20px;">กรอกรหัสผ่านเพื่อเข้าสู่ระบบ</div>
+      <div class="form-group">
+        <input class="form-input" type="password" id="admin-pwd-input" placeholder="รหัสผ่าน" onkeydown="if(event.key==='Enter')doAdminLogin()">
+      </div>
+      <button class="btn btn-primary" style="width:100%;justify-content:center;" onclick="doAdminLogin()">🔓 เข้าสู่ระบบ</button>
+    </div>
+  </div>
+  <div id="admin-panel" style="display:none;">
+    <div class="nm card">
+      <div class="card-title">📝 จัดการข้อสอบ (<span id="q-count">0</span>/60 ข้อ)</div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;">
+        <button class="btn btn-primary btn-sm" onclick="openAddQuestion()">➕ เพิ่มข้อ</button>
+        <label class="btn btn-sm" style="cursor:pointer;">
+          📥 Import Excel <input type="file" accept=".xlsx,.xls" style="display:none" onchange="importExcel(event)">
+        </label>
+        <button class="btn btn-sm" onclick="exportExcel()">📤 Export Excel</button>
+      </div>
+      <div class="table-wrap nm-inset" style="padding:0;">
+        <table id="questions-table">
+          <thead><tr><th>#</th><th>คำถาม</th><th>A</th><th>B</th><th>C</th><th>D</th><th>เฉลย</th><th>จัดการ</th></tr></thead>
+          <tbody id="questions-tbody"></tbody>
+        </table>
+      </div>
+      <div id="q-empty" class="loading" style="display:none;">ยังไม่มีข้อสอบ กรุณาเพิ่มหรือ Import</div>
+    </div>
+  </div>
+</div>
+
+<!-- TAB: DASHBOARD -->
+<div class="tab-content" id="tab-dashboard-content">
+  <div id="dash-lock" class="overlay-hint nm card">
+    <div class="icon">🔒</div>
+    <div>กรุณา Login Admin ก่อน</div>
+  </div>
+  <div id="dash-panel" style="display:none;">
+    <div class="grid-4" id="stat-cards" style="margin-bottom:20px;">
+      <div class="nm stat-card"><div class="stat-value" id="s-total">0</div><div class="stat-label">ผู้เข้าสอบทั้งหมด</div></div>
+      <div class="nm stat-card"><div class="stat-value" id="s-avg">-</div><div class="stat-label">คะแนนเฉลี่ย</div></div>
+      <div class="nm stat-card"><div class="stat-value" id="s-max">-</div><div class="stat-label">คะแนนสูงสุด</div></div>
+      <div class="nm stat-card"><div class="stat-value" id="s-min">-</div><div class="stat-label">คะแนนต่ำสุด</div></div>
+    </div>
+    <div class="nm card" style="margin-bottom:20px;">
+      <div class="card-title">📊 ร้อยละนักเรียนที่ผ่านเกณฑ์</div>
+      <div id="pass-stat-display" style="font-size:24px; font-weight:700; color:var(--primary);"></div>
+    </div>
+    <div class="grid-2" style="margin-bottom:20px;">
+      <div class="nm card">
+        <div class="card-title">📊 คะแนนเฉลี่ยตามห้อง</div>
+        <div class="chart-wrap"><canvas id="chart-room"></canvas></div>
+      </div>
+      <div class="nm card">
+        <div class="card-title">❌ Top 5 ข้อที่ตอบผิดมากที่สุด</div>
+        <div class="chart-wrap"><canvas id="chart-wrong"></canvas></div>
+      </div>
+    </div>
+    <div class="nm card">
+      <div class="card-title">👥 รายชื่อนักเรียน</div>
+      <div class="filter-row">
+        <select class="form-input" id="filter-room" style="max-width:160px;" onchange="applyFilter()">
+          <option value="">ทุกห้อง</option>
+        </select>
+        <button class="btn btn-sm" onclick="loadDashboard()">🔄 รีเฟรช</button>
+        <button class="btn btn-danger btn-sm" onclick="clearResults()">🗑️ ล้างข้อมูล</button>
+      </div>
+      <div class="table-wrap nm-inset" style="padding:0;">
+        <table>
+          <thead><tr><th>#</th><th>ชื่อ</th><th>ห้อง</th><th>คะแนน</th><th>%</th><th>สถานะ</th></tr></thead>
+          <tbody id="results-tbody"></tbody>
+        </table>
+      </div>
+      <div id="results-empty" style="display:none;" class="loading">ยังไม่มีข้อมูล</div>
+      <div class="pagination" id="pagination"></div>
+    </div>
+  </div>
+</div>
+
+<!-- TAB: SETTINGS -->
+<div class="tab-content" id="tab-settings-content">
+  <div id="settings-lock" class="overlay-hint nm card">
+    <div class="icon">🔒</div>
+    <div>กรุณา Login Admin ก่อน</div>
+  </div>
+  <div id="settings-panel" style="display:none;">
+    <div class="grid-2" style="gap:20px;">
+      <div>
+        <div class="nm card">
+          <div class="card-title">🛠️ ตั้งค่าระบบ</div>
+          <div class="form-group"><label class="form-label">ชื่อระบบ</label><input class="form-input" id="s-sysname" value="ระบบข้อสอบ"></div>
+          <div class="form-group"><label class="form-label">ชื่อวิชา</label><input class="form-input" id="s-subject" value="Emotions and Feeling"></div>
+          <div class="form-group"><label class="form-label">ชื่อผู้พัฒนา</label><input class="form-input" id="s-developer" value="ประภัสสร เรืองฤทธิ์ | กุญชรศิรวิทย์"></div>
+          <div class="form-group"><label class="form-label">รหัสผ่าน Admin</label><input class="form-input" type="password" id="s-password" placeholder="รหัสผ่านใหม่"></div>
+        </div>
+        <div class="nm card" style="margin-top:20px;">
+          <div class="card-title">⏱️ ระบบจับเวลา</div>
+          <div class="form-group">
+            <label class="form-label">เปิดใช้จับเวลาต่อข้อ</label>
+            <div class="toggle-wrap">
+              <div class="toggle" id="timer-toggle" onclick="toggleTimer()"><div class="toggle-knob"></div></div>
+              <span id="timer-toggle-label" style="font-size:13px;color:var(--text-light);">ปิด</span>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">เวลาต่อข้อ (วินาที)</label>
+            <input class="form-input" type="number" id="s-timer-secs" min="5" max="300" value="30">
+            <div class="hint-text">เวลานี้จะใช้กับทุกข้อเท่ากัน</div>
+          </div>
+        </div>
+        <div class="nm card" style="margin-top:20px;">
+          <div class="card-title">🎯 เกณฑ์การผ่าน</div>
+          <div class="form-group">
+            <label class="form-label">ร้อยละคะแนนที่ผ่านเกณฑ์ (%)</label>
+            <input class="form-input" type="number" id="s-pass" min="1" max="100" value="60">
+            <div class="hint-text" id="pass-hint">นักเรียนต้องได้ ≥ 60% จึงถือว่าผ่าน</div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="nm card">
+          <div class="card-title">🎨 ธีมสี</div>
+          <div class="color-themes" id="theme-options">
+            <div class="theme-option active" data-theme="" onclick="setTheme('')">
+              <div class="theme-dot" style="background:linear-gradient(135deg,#0dc587,#d2af32)"></div>เขียว-เหลือง
+            </div>
+            <div class="theme-option" data-theme="theme-blue" onclick="setTheme('theme-blue')">
+              <div class="theme-dot" style="background:linear-gradient(135deg,#2563eb,#ffffff)"></div>น้ำเงิน-ขาว
+            </div>
+            <div class="theme-option" data-theme="theme-purple" onclick="setTheme('theme-purple')">
+              <div class="theme-dot" style="background:linear-gradient(135deg,#8b5cf6,#ec4899)"></div>ม่วง-ชมพู
+            </div>
+          </div>
+        </div>
+        <div class="nm card" style="margin-top:20px;">
+          <div class="card-title">📱 QR Code ลิ้งก์ระบบ</div>
+          <div class="qr-wrap nm-inset" id="qr-container"></div>
+          <div style="margin-top:12px; display:flex; gap:8px;">
+            <input class="form-input" id="url-display" readonly style="font-size:12px;">
+            <button class="btn btn-sm" onclick="copyURL()">📋 คัดลอก</button>
+          </div>
+        </div>
+        <div class="nm card" style="margin-top:20px;">
+          <div class="card-title">⚠️ โซนอันตราย</div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;">
+            <button class="btn btn-danger btn-sm" onclick="clearAllResults()">🗑️ ล้างผลสอบทั้งหมด</button>
+            <button class="btn btn-danger btn-sm" onclick="clearAllQuestions()">🗑️ ล้างข้อสอบทั้งหมด</button>
+          </div>
+        </div>
+        <div style="margin-top:20px; text-align:right;">
+          <button class="btn btn-primary" onclick="saveSettings()">💾 บันทึกการตั้งค่า</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<!-- MODAL: Add/Edit Question -->
+<div class="modal-overlay" id="modal-question">
+  <div class="modal">
+    <div class="modal-title" id="modal-q-title">➕ เพิ่มข้อสอบ</div>
+    <input type="hidden" id="modal-q-id">
+    <div class="form-group"><label class="form-label">คำถาม</label><textarea class="form-input" id="modal-q-text" rows="3" style="resize:vertical;"></textarea></div>
+    <div class="form-group"><label class="form-label">ตัวเลือก A</label><input class="form-input" id="modal-q-a"></div>
+    <div class="form-group"><label class="form-label">ตัวเลือก B</label><input class="form-input" id="modal-q-b"></div>
+    <div class="form-group"><label class="form-label">ตัวเลือก C</label><input class="form-input" id="modal-q-c"></div>
+    <div class="form-group"><label class="form-label">ตัวเลือก D</label><input class="form-input" id="modal-q-d"></div>
+    <div class="form-group"><label class="form-label">เฉลย</label>
+      <select class="form-input" id="modal-q-ans">
+        <option value="A">A</option><option value="B">B</option>
+        <option value="C">C</option><option value="D">D</option>
+      </select>
+    </div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;">
+      <button class="btn btn-sm" onclick="closeModal('modal-question')">ยกเลิก</button>
+      <button class="btn btn-primary btn-sm" onclick="saveQuestion()">💾 บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Confirm Submit -->
+<div class="modal-overlay" id="modal-confirm">
+  <div class="modal" style="text-align:center;">
+    <div style="font-size:40px;margin-bottom:12px;">📤</div>
+    <div class="modal-title">ยืนยันการส่งคำตอบ?</div>
+    <div style="color:var(--text-light);font-size:14px;margin-bottom:20px;" id="confirm-msg"></div>
+    <div style="display:flex;gap:10px;justify-content:center;">
+      <button class="btn btn-sm" onclick="closeModal('modal-confirm')">ยกเลิก</button>
+      <button class="btn btn-primary btn-sm" onclick="submitExam()">✅ ส่งคำตอบ</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyDMVcEXCUzXdEkMRqP84KMdX01xHxGj5pE",
+  authDomain: "quizetest-d4970.firebaseapp.com",
+  projectId: "quizetest-d4970",
+  storageBucket: "quizetest-d4970.firebasestorage.app",
+  messagingSenderId: "340117767001",
+  appId: "1:340117767001:web:40d87299541bfa6c388248"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+let appSettings = {
+  sysname: 'ระบบข้อสอบ',
+  subject: 'Emotions and Feeling',
+  developer: 'ประภัสสร เรืองฤทธิ์ | กุญชรศิรวิทย์',
+  password: '1234',
+  passPercent: 60,
+  timerEnabled: false,
+  timerSeconds: 30,
+  theme: ''
+};
+
+let adminLoggedIn = false;
+let questions = [];
+let examQuestions = [];
+let currentQ = 0;
+let answers = {};
+let studentName = '';
+let studentRoom = '';
+let timerInterval = null;
+let timerRemaining = 30;
+let allResults = [];
+let filteredResults = [];
+let currentPage = 1;
+const PAGE_SIZE = 15;
+let chartRoom = null;
+let chartWrong = null;
+
+async function loadSettings() {
+  try {
+    const doc = await db.collection('settings').doc('main').get();
+    if (doc.exists) {
+      const d = doc.data();
+      appSettings = Object.assign(appSettings, d);
+    }
+  } catch(e) {}
+  applySettings();
+}
+
+function applySettings() {
+  document.getElementById('headerTitle').textContent = (appSettings.sysname || 'ระบบข้อสอบ') + ' | ' + (appSettings.subject || '');
+  document.getElementById('headerDev').textContent = appSettings.developer || '';
+  document.getElementById('startSubject').textContent = appSettings.subject || '';
+  if (appSettings.theme) {
+    document.body.className = appSettings.theme;
+  } else {
+    document.body.className = '';
+  }
+  document.getElementById('s-sysname').value = appSettings.sysname || '';
+  document.getElementById('s-subject').value = appSettings.subject || '';
+  document.getElementById('s-developer').value = appSettings.developer || '';
+  document.getElementById('s-pass').value = appSettings.passPercent || 60;
+  document.getElementById('s-timer-secs').value = appSettings.timerSeconds || 30;
+  updateTimerToggleUI();
+  updatePassHint();
+  document.querySelectorAll('.theme-option').forEach(el => {
+    el.classList.toggle('active', el.dataset.theme === (appSettings.theme || ''));
+  });
+}
+
+function updateTimerToggleUI() {
+  const tog = document.getElementById('timer-toggle');
+  const lbl = document.getElementById('timer-toggle-label');
+  const inp = document.getElementById('s-timer-secs');
+  if (appSettings.timerEnabled) {
+    tog.classList.add('on');
+    lbl.textContent = 'เปิด';
+    inp.disabled = false;
+  } else {
+    tog.classList.remove('on');
+    lbl.textContent = 'ปิด';
+    inp.disabled = true;
+  }
+}
+
+function toggleTimer() {
+  appSettings.timerEnabled = !appSettings.timerEnabled;
+  updateTimerToggleUI();
+}
+
+function updatePassHint() {
+  const v = document.getElementById('s-pass').value;
+  document.getElementById('pass-hint').textContent = `นักเรียนต้องได้ ≥ ${v}% จึงถือว่าผ่าน`;
+}
+document.getElementById('s-pass').addEventListener('input', updatePassHint);
+
+function setTheme(t) {
+  appSettings.theme = t;
+  document.querySelectorAll('.theme-option').forEach(el => {
+    el.classList.toggle('active', el.dataset.theme === t);
+  });
+  document.body.className = t;
+}
+
+async function saveSettings() {
+  appSettings.sysname = document.getElementById('s-sysname').value.trim() || 'ระบบข้อสอบ';
+  appSettings.subject = document.getElementById('s-subject').value.trim() || 'Emotions and Feeling';
+  appSettings.developer = document.getElementById('s-developer').value.trim() || '';
+  const newPwd = document.getElementById('s-password').value.trim();
+  if (newPwd) appSettings.password = newPwd;
+  appSettings.passPercent = parseInt(document.getElementById('s-pass').value) || 60;
+  appSettings.timerSeconds = parseInt(document.getElementById('s-timer-secs').value) || 30;
+  try {
+    await db.collection('settings').doc('main').set(appSettings);
+    applySettings();
+    showToast('บันทึกการตั้งค่าแล้ว', 'success');
+    document.getElementById('s-password').value = '';
+  } catch(e) {
+    showToast('เกิดข้อผิดพลาด: ' + e.message, 'error');
+  }
+}
+
+function switchTab(tab) {
+  document.querySelectorAll('.tab-btn').forEach((b, i) => {
+    const tabs = ['exam', 'admin', 'dashboard', 'settings'];
+    b.classList.toggle('active', tabs[i] === tab);
+  });
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  const map = { exam: 'tab-exam', admin: 'tab-admin-content', dashboard: 'tab-dashboard-content', settings: 'tab-settings-content' };
+  document.getElementById(map[tab]).classList.add('active');
+  if (tab === 'dashboard' && adminLoggedIn) loadDashboard();
+  if (tab === 'settings' && adminLoggedIn) {
+    generateQR();
+    document.getElementById('url-display').value = window.location.href;
+  }
+  if (tab === 'admin' && adminLoggedIn) loadQuestions();
+}
+
+function doAdminLogin() {
+  const pwd = document.getElementById('admin-pwd-input').value;
+  if (pwd === appSettings.password) {
+    adminLoggedIn = true;
+    document.getElementById('admin-login-screen').style.display = 'none';
+    document.getElementById('admin-panel').style.display = 'block';
+    document.getElementById('dash-lock').style.display = 'none';
+    document.getElementById('dash-panel').style.display = 'block';
+    document.getElementById('settings-lock').style.display = 'none';
+    document.getElementById('settings-panel').style.display = 'block';
+    ['lock-admin','lock-dashboard','lock-settings'].forEach(id => {
+      document.getElementById(id).textContent = '🔓';
+    });
+    loadQuestions();
+    applySettings();
+    generateQR();
+    document.getElementById('url-display').value = window.location.href;
+    showToast('เข้าสู่ระบบสำเร็จ', 'success');
+  } else {
+    showToast('รหัสผ่านไม่ถูกต้อง', 'error');
+  }
+  document.getElementById('admin-pwd-input').value = '';
+}
+
+async function loadQuestions() {
+  try {
+    const snap = await db.collection('questions').orderBy('order').get();
+    questions = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    renderQuestionsTable();
+  } catch(e) {
+    showToast('โหลดข้อสอบไม่ได้: ' + e.message, 'error');
+  }
+}
+
+function renderQuestionsTable() {
+  const tbody = document.getElementById('questions-tbody');
+  const empty = document.getElementById('q-empty');
+  document.getElementById('q-count').textContent = questions.length;
+  if (!questions.length) {
+    tbody.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+  tbody.innerHTML = questions.map((q, i) => `
+    <tr>
+      <td>${i + 1}</td>
+      <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${q.question || ''}</td>
+      <td style="max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${q.a || ''}</td>
+      <td style="max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${q.b || ''}</td>
+      <td style="max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${q.c || ''}</td>
+      <td style="max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${q.d || ''}</td>
+      <td><span class="badge badge-info">${q.answer || ''}</span></td>
+      <td>
+        <button class="btn btn-xs btn-sm" onclick="openEditQuestion('${q.id}')">✏️</button>
+        <button class="btn btn-xs btn-danger" onclick="deleteQuestion('${q.id}')">🗑️</button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function openAddQuestion() {
+  if (questions.length >= 60) { showToast('ถึงขีดสูงสุด 60 ข้อแล้ว', 'error'); return; }
+  document.getElementById('modal-q-title').textContent = '➕ เพิ่มข้อสอบ';
+  document.getElementById('modal-q-id').value = '';
+  document.getElementById('modal-q-text').value = '';
+  document.getElementById('modal-q-a').value = '';
+  document.getElementById('modal-q-b').value = '';
+  document.getElementById('modal-q-c').value = '';
+  document.getElementById('modal-q-d').value = '';
+  document.getElementById('modal-q-ans').value = 'A';
+  openModal('modal-question');
+}
+
+function openEditQuestion(id) {
+  const q = questions.find(x => x.id === id);
+  if (!q) return;
+  document.getElementById('modal-q-title').textContent = '✏️ แก้ไขข้อสอบ';
+  document.getElementById('modal-q-id').value = id;
+  document.getElementById('modal-q-text').value = q.question || '';
+  document.getElementById('modal-q-a').value = q.a || '';
+  document.getElementById('modal-q-b').value = q.b || '';
+  document.getElementById('modal-q-c').value = q.c || '';
+  document.getElementById('modal-q-d').value = q.d || '';
+  document.getElementById('modal-q-ans').value = q.answer || 'A';
+  openModal('modal-question');
+}
+
+async function saveQuestion() {
+  const id = document.getElementById('modal-q-id').value;
+  const data = {
+    question: document.getElementById('modal-q-text').value.trim(),
+    a: document.getElementById('modal-q-a').value.trim(),
+    b: document.getElementById('modal-q-b').value.trim(),
+    c: document.getElementById('modal-q-c').value.trim(),
+    d: document.getElementById('modal-q-d').value.trim(),
+    answer: document.getElementById('modal-q-ans').value
+  };
+  if (!data.question) { showToast('กรุณากรอกคำถาม', 'error'); return; }
+  try {
+    if (id) {
+      await db.collection('questions').doc(id).update(data);
+    } else {
+      data.order = questions.length;
+      await db.collection('questions').add(data);
+    }
+    closeModal('modal-question');
+    loadQuestions();
+    showToast('บันทึกข้อสอบแล้ว', 'success');
+  } catch(e) {
+    showToast('เกิดข้อผิดพลาด: ' + e.message, 'error');
+  }
+}
+
+async function deleteQuestion(id) {
+  if (!confirm('ลบข้อสอบนี้?')) return;
+  try {
+    await db.collection('questions').doc(id).delete();
+    loadQuestions();
+    showToast('ลบแล้ว', 'success');
+  } catch(e) {
+    showToast('เกิดข้อผิดพลาด', 'error');
+  }
+}
+
+function importExcel(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = async (ev) => {
+    try {
+      const wb = XLSX.read(ev.target.result, { type: 'binary' });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws, { header: 1 });
+      const batch = db.batch();
+      let count = 0;
+      const startOrder = questions.length;
+      for (let i = 0; i < rows.length; i++) {
+        const row = rows[i];
+        if (!row[0]) continue;
+        if (questions.length + count >= 60) break;
+        const ref = db.collection('questions').doc();
+        batch.set(ref, {
+          question: String(row[0] || '').trim(),
+          a: String(row[1] || '').trim(),
+          b: String(row[2] || '').trim(),
+          c: String(row[3] || '').trim(),
+          d: String(row[4] || '').trim(),
+          answer: String(row[5] || 'A').trim().toUpperCase(),
+          order: startOrder + count
+        });
+        count++;
+      }
+      await batch.commit();
+      loadQuestions();
+      showToast(`Import ${count} ข้อสำเร็จ`, 'success');
+    } catch(err) {
+      showToast('Import ไม่สำเร็จ: ' + err.message, 'error');
+    }
+    e.target.value = '';
+  };
+  reader.readAsBinaryString(file);
+}
+
+function exportExcel() {
+  const data = questions.map(q => [q.question, q.a, q.b, q.c, q.d, q.answer]);
+  const ws = XLSX.utils.aoa_to_sheet([['คำถาม','A','B','C','D','เฉลย'], ...data]);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Questions');
+  XLSX.writeFile(wb, 'questions.xlsx');
+}
+
+async function startExam(anon) {
+  if (!anon) {
+    studentName = document.getElementById('studentName').value.trim();
+    studentRoom = document.getElementById('studentRoom').value.trim();
+    if (!studentName) { showToast('กรุณากรอกชื่อ', 'error'); return; }
+  } else {
+    studentName = 'ไม่ระบุตัวตน';
+    studentRoom = '-';
+  }
+  try {
+    const snap = await db.collection('questions').orderBy('order').get();
+    examQuestions = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  } catch(e) {
+    showToast('โหลดข้อสอบไม่สำเร็จ', 'error'); return;
+  }
+  if (!examQuestions.length) { showToast('ยังไม่มีข้อสอบในระบบ', 'error'); return; }
+  answers = {};
+  currentQ = 0;
+  document.getElementById('exam-start').style.display = 'none';
+  document.getElementById('exam-doing').style.display = 'block';
+  document.getElementById('exam-result').style.display = 'none';
+  document.getElementById('q-student-name').textContent = studentName !== 'ไม่ระบุตัวตน' ? (studentName + (studentRoom !== '-' ? ' | ' + studentRoom : '')) : '';
+  renderQuestion();
+}
+
+function renderQuestion() {
+  const q = examQuestions[currentQ];
+  document.getElementById('q-current').textContent = currentQ + 1;
+  document.getElementById('q-total').textContent = examQuestions.length;
+  document.getElementById('q-num-label').textContent = `ข้อที่ ${currentQ + 1}`;
+  document.getElementById('q-text').textContent = q.question;
+  const pct = ((currentQ + 1) / examQuestions.length) * 100;
+  document.getElementById('q-progress').style.width = pct + '%';
+  const choiceList = document.getElementById('choice-list');
+  const opts = [
+    { label: 'A', text: q.a },
+    { label: 'B', text: q.b },
+    { label: 'C', text: q.c },
+    { label: 'D', text: q.d }
+  ];
+  choiceList.innerHTML = opts.map(o => `
+    <div class="choice-item ${answers[currentQ] === o.label ? 'selected' : ''}"
+      onclick="selectAnswer('${o.label}')">
+      <div class="choice-label">${o.label}</div>
+      <div class="choice-text">${o.text || ''}</div>
+    </div>
+  `).join('');
+  updateAnsweredCount();
+  const nextBtn = document.getElementById('next-btn');
+  if (currentQ === examQuestions.length - 1) {
+    nextBtn.textContent = '✅ สรุป';
+    nextBtn.onclick = confirmSubmit;
+  } else {
+    nextBtn.textContent = 'ถัดไป ▶';
+    nextBtn.onclick = nextQuestion;
+  }
+  if (appSettings.timerEnabled) startTimer();
+  else stopTimer();
+}
+
+function selectAnswer(label) {
+  answers[currentQ] = label;
+  stopTimer();
+  renderQuestion();
+}
+
+function nextQuestion() {
+  if (currentQ < examQuestions.length - 1) { currentQ++; renderQuestion(); }
+}
+
+function prevQuestion() {
+  if (currentQ > 0) { currentQ--; renderQuestion(); }
+}
+
+function updateAnsweredCount() {
+  const count = Object.keys(answers).length;
+  document.getElementById('answered-count').textContent = `ตอบแล้ว ${count}/${examQuestions.length} ข้อ`;
+}
+
+function startTimer() {
+  stopTimer();
+  const tc = document.getElementById('timer-container');
+  tc.style.display = 'block';
+  timerRemaining = appSettings.timerSeconds;
+  updateTimerDisplay();
+  timerInterval = setInterval(() => {
+    timerRemaining--;
+    updateTimerDisplay();
+    if (timerRemaining <= 0) {
+      stopTimer();
+      if (currentQ < examQuestions.length - 1) { currentQ++; renderQuestion(); }
+      else confirmSubmit();
+    }
+  }, 1000);
+}
+
+function stopTimer() {
+  if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+  document.getElementById('timer-container').style.display = 'none';
+}
+
+function updateTimerDisplay() {
+  const total = appSettings.timerSeconds;
+  const pct = timerRemaining / total;
+  const circ = 138.2;
+  const offset = circ * (1 - pct);
+  const arc = document.getElementById('timer-arc');
+  arc.style.strokeDashoffset = offset;
+  document.getElementById('timer-text').textContent = timerRemaining;
+  const txt = document.getElementById('timer-text');
+  if (pct > 0.5) {
+    arc.style.stroke = 'var(--primary)';
+    txt.style.color = 'var(--text)';
+    txt.classList.remove('timer-pulse');
+  } else if (pct > 0.2) {
+    arc.style.stroke = '#f39c12';
+    txt.style.color = '#f39c12';
+    txt.classList.remove('timer-pulse');
+  } else {
+    arc.style.stroke = '#e74c3c';
+    txt.style.color = '#e74c3c';
+    txt.classList.add('timer-pulse');
+  }
+}
+
+function confirmSubmit() {
+  const answered = Object.keys(answers).length;
+  const total = examQuestions.length;
+  document.getElementById('confirm-msg').textContent = `คุณตอบแล้ว ${answered}/${total} ข้อ ยังไม่ได้ตอบอีก ${total - answered} ข้อ`;
+  openModal('modal-confirm');
+}
+
+async function submitExam() {
+  closeModal('modal-confirm');
+  stopTimer();
+  let score = 0;
+  const detail = examQuestions.map((q, i) => {
+    const userAns = answers[i] || null;
+    const correct = userAns === q.answer;
+    if (correct) score++;
+    return { question: q.question, userAnswer: userAns, correct: q.answer, isCorrect: correct };
+  });
+  const pct = Math.round((score / examQuestions.length) * 100);
+  const pass = pct >= (appSettings.passPercent || 60);
+  document.getElementById('score-big').textContent = `${score}/${examQuestions.length}`;
+  document.getElementById('score-pct').textContent = `คิดเป็น ${pct}%`;
+  const pb = document.getElementById('pass-badge');
+  pb.innerHTML = pass
+    ? `<span class="badge badge-success" style="font-size:16px;padding:6px 18px;">✅ ผ่าน</span>`
+    : `<span class="badge badge-danger" style="font-size:16px;padding:6px 18px;">❌ ไม่ผ่าน</span>`;
+  const reviewList = document.getElementById('review-list');
+  reviewList.innerHTML = detail.map((d, i) => {
+    const cls = !d.userAnswer ? 'skipped' : d.isCorrect ? 'correct' : 'wrong';
+    const icon = !d.userAnswer ? '⏭️' : d.isCorrect ? '✅' : '❌';
+    return `
+      <div class="review-item ${cls}">
+        <div class="review-q">${icon} ข้อ ${i+1}: ${d.question}</div>
+        <div class="review-ans">
+          คำตอบของคุณ: <strong>${d.userAnswer || 'ไม่ได้ตอบ'}</strong> |
+          เฉลย: <strong style="color:var(--primary)">${d.correct}</strong>
+        </div>
+      </div>
+    `;
+  }).join('');
+  document.getElementById('exam-doing').style.display = 'none';
+  document.getElementById('exam-result').style.display = 'block';
+  if (studentName !== 'ไม่ระบุตัวตน') {
+    try {
+      await db.collection('results').add({
+        name: studentName,
+        room: studentRoom,
+        score,
+        total: examQuestions.length,
+        percent: pct,
+        detail,
+        pass,
+        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+      });
+    } catch(e) {}
+  }
+}
+
+function restartExam() {
+  document.getElementById('exam-result').style.display = 'none';
+  document.getElementById('exam-start').style.display = 'block';
+  document.getElementById('review-section').style.display = 'none';
+}
+
+function toggleReview() {
+  const s = document.getElementById('review-section');
+  s.style.display = s.style.display === 'none' ? 'block' : 'none';
+}
+
+async function loadDashboard() {
+  if (!adminLoggedIn) return;
+  try {
+    const snap = await db.collection('results').orderBy('timestamp', 'desc').get();
+    allResults = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    renderDashboard();
+  } catch(e) {
+    showToast('โหลด Dashboard ไม่สำเร็จ', 'error');
+  }
+}
+
+function renderDashboard() {
+  const total = allResults.length;
+  document.getElementById('s-total').textContent = total;
+  if (total === 0) {
+    document.getElementById('s-avg').textContent = '-';
+    document.getElementById('s-max').textContent = '-';
+    document.getElementById('s-min').textContent = '-';
+    document.getElementById('pass-stat-display').textContent = '-';
+    document.getElementById('results-empty').style.display = 'block';
+    document.getElementById('results-tbody').innerHTML = '';
+    return;
+  }
+  const percents = allResults.map(r => r.percent || 0);
+  const avg = Math.round(percents.reduce((a, b) => a + b, 0) / total);
+  const max = Math.max(...percents);
+  const min = Math.min(...percents);
+  document.getElementById('s-avg').textContent = avg + '%';
+  document.getElementById('s-max').textContent = max + '%';
+  document.getElementById('s-min').textContent = min + '%';
+  const passThresh = appSettings.passPercent || 60;
+  const passCount = allResults.filter(r => (r.percent || 0) >= passThresh).length;
+  const passPct = Math.round((passCount / total) * 100);
+  const passEl = document.getElementById('pass-stat-display');
+  passEl.innerHTML = `<span class="badge ${passPct >= 50 ? 'badge-success' : 'badge-danger'}" style="font-size:18px;padding:8px 20px;">${passPct}% (${passCount}/${total} คน)</span>`;
+  const rooms = [...new Set(allResults.map(r => r.room).filter(Boolean))];
+  const filterSelect = document.getElementById('filter-room');
+  const prevVal = filterSelect.value;
+  filterSelect.innerHTML = '<option value="">ทุกห้อง</option>' + rooms.map(r => `<option value="${r}">${r}</option>`).join('');
+  if (prevVal) filterSelect.value = prevVal;
+  renderCharts(rooms);
+  applyFilter();
+}
+
+function renderCharts(rooms) {
+  const passThresh = appSettings.passPercent || 60;
+  const roomAvg = rooms.map(room => {
+    const rs = allResults.filter(r => r.room === room);
+    return { room, avg: Math.round(rs.reduce((a, b) => a + (b.percent || 0), 0) / rs.length) };
+  });
+  if (chartRoom) chartRoom.destroy();
+  const ctxR = document.getElementById('chart-room').getContext('2d');
+  chartRoom = new Chart(ctxR, {
+    type: 'bar',
+    data: {
+      labels: roomAvg.map(r => r.room),
+      datasets: [{ label: 'คะแนนเฉลี่ย (%)', data: roomAvg.map(r => r.avg), backgroundColor: 'rgba(13,197,135,0.7)', borderRadius: 6 }]
+    },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { max: 100, min: 0 } } }
+  });
+  const wrongCount = {};
+  allResults.forEach(r => {
+    (r.detail || []).forEach((d, i) => {
+      if (!d.isCorrect) wrongCount[i + 1] = (wrongCount[i + 1] || 0) + 1;
+    });
+  });
+  const sorted = Object.entries(wrongCount).sort((a, b) => b[1] - a[1]).slice(0, 5);
+  if (chartWrong) chartWrong.destroy();
+  const ctxW = document.getElementById('chart-wrong').getContext('2d');
+  chartWrong = new Chart(ctxW, {
+    type: 'bar',
+    data: {
+      labels: sorted.map(x => `ข้อ ${x[0]}`),
+      datasets: [{ label: 'จำนวนตอบผิด', data: sorted.map(x => x[1]), backgroundColor: 'rgba(231,76,60,0.7)', borderRadius: 6 }]
+    },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+  });
+}
+
+function applyFilter() {
+  const room = document.getElementById('filter-room').value;
+  filteredResults = room ? allResults.filter(r => r.room === room) : [...allResults];
+  currentPage = 1;
+  renderResultsTable();
+}
+
+function renderResultsTable() {
+  const tbody = document.getElementById('results-tbody');
+  const empty = document.getElementById('results-empty');
+  const passThresh = appSettings.passPercent || 60;
+  if (!filteredResults.length) { tbody.innerHTML = ''; empty.style.display = 'block'; document.getElementById('pagination').innerHTML = ''; return; }
+  empty.style.display = 'none';
+  const start = (currentPage - 1) * PAGE_SIZE;
+  const page = filteredResults.slice(start, start + PAGE_SIZE);
+  tbody.innerHTML = page.map((r, i) => {
+    const pass = (r.percent || 0) >= passThresh;
+    return `
+      <tr>
+        <td>${start + i + 1}</td>
+        <td>${r.name || '-'}</td>
+        <td>${r.room || '-'}</td>
+        <td>${r.score || 0}/${r.total || 0}</td>
+        <td>${r.percent || 0}%</td>
+        <td><span class="badge ${pass ? 'badge-success' : 'badge-danger'}">${pass ? '✅ ผ่าน' : '❌ ไม่ผ่าน'}</span></td>
+      </tr>
+    `;
+  }).join('');
+  const totalPages = Math.ceil(filteredResults.length / PAGE_SIZE);
+  const pag = document.getElementById('pagination');
+  if (totalPages <= 1) { pag.innerHTML = ''; return; }
+  let html = '';
+  for (let i = 1; i <= totalPages; i++) {
+    html += `<button class="page-btn ${i === currentPage ? 'active' : ''}" onclick="goPage(${i})">${i}</button>`;
+  }
+  pag.innerHTML = html;
+}
+
+function goPage(p) { currentPage = p; renderResultsTable(); }
+
+async function clearResults() {
+  if (!confirm('ยืนยันลบข้อมูลผลสอบทั้งหมด?')) return;
+  if (!confirm('ยืนยันอีกครั้ง: ข้อมูลจะหายถาวร')) return;
+  try {
+    const snap = await db.collection('results').get();
+    const batch = db.batch();
+    snap.docs.forEach(d => batch.delete(d.ref));
+    await batch.commit();
+    loadDashboard();
+    showToast('ล้างข้อมูลแล้ว', 'success');
+  } catch(e) { showToast('เกิดข้อผิดพลาด', 'error'); }
+}
+
+async function clearAllResults() {
+  if (!confirm('ยืนยันลบข้อมูลผลสอบทั้งหมด?')) return;
+  if (!confirm('ยืนยันอีกครั้ง: ข้อมูลจะหายถาวร')) return;
+  try {
+    const snap = await db.collection('results').get();
+    const batch = db.batch();
+    snap.docs.forEach(d => batch.delete(d.ref));
+    await batch.commit();
+    showToast('ล้างผลสอบแล้ว', 'success');
+  } catch(e) { showToast('เกิดข้อผิดพลาด', 'error'); }
+}
+
+async function clearAllQuestions() {
+  if (!confirm('ยืนยันลบข้อสอบทั้งหมด?')) return;
+  if (!confirm('ยืนยันอีกครั้ง: ข้อมูลจะหายถาวร')) return;
+  try {
+    const snap = await db.collection('questions').get();
+    const batch = db.batch();
+    snap.docs.forEach(d => batch.delete(d.ref));
+    await batch.commit();
+    questions = [];
+    renderQuestionsTable();
+    showToast('ล้างข้อสอบแล้ว', 'success');
+  } catch(e) { showToast('เกิดข้อผิดพลาด', 'error'); }
+}
+
+function generateQR() {
+  const container = document.getElementById('qr-container');
+  container.innerHTML = '';
+  try {
+    new QRCode(container, {
+      text: window.location.href,
+      width: 150, height: 150,
+      colorDark: '#000000', colorLight: '#ffffff',
+      correctLevel: QRCode.CorrectLevel.M
+    });
+  } catch(e) {}
+}
+
+function copyURL() {
+  navigator.clipboard.writeText(window.location.href).then(() => {
+    showToast('คัดลอก URL แล้ว', 'success');
+  });
+}
+
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+document.querySelectorAll('.modal-overlay').forEach(el => {
+  el.addEventListener('click', e => { if (e.target === el) el.classList.remove('open'); });
+});
+
+function showToast(msg, type) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (type ? ' ' + type : '');
+  setTimeout(() => { t.classList.remove('show'); }, 2800);
+}
+
+loadSettings();
+</script>
+</body>
+</html>
